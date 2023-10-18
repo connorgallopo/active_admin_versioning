@@ -15,11 +15,13 @@ module ActiveAdminVersioning
             object.touch
           end
         end
-
-        member_action(:versions) do
-          @versions   = resource.versions.reorder(id: :desc, created_at: :desc).page(params[:page])
-          @page_title = ::PaperTrail::Version.model_name.human
-          render "versions"
+        
+        if false
+          member_action(:versions) do
+            @versions   = resource.versions.reorder(id: :desc, created_at: :desc).page(params[:page])
+            @page_title = ::PaperTrail::Version.model_name.human
+            render "versions"
+          end
         end
 
         member_action :rollbacks do
