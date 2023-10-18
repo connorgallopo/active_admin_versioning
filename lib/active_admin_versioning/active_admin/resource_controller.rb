@@ -9,7 +9,7 @@ module ActiveAdminVersioning
         page = params[:page].to_i
         @versions = resource.versions.reorder(id: :desc, created_at: :desc).page(params[:page]).per(1)
         @version_number = page > 0 ? @versions.total_count - (page - 1) : @versions.total_count
-        if @versions.any? && @versions[0].next.present?
+        if @versions.any? && @versions[0].next.present?  && !public_send(current_user_method).application_owner?
           set_resource_ivar(@versions[0].next.reify(has_many: true, has_one: true))
         end
         show!
@@ -19,7 +19,7 @@ module ActiveAdminVersioning
 
       def user_for_paper_trail
         if current_user_method && respond_to?(current_user_method)
-          public_send(current_user_method).try!(:id) && !public_send(current_user_method).application_owner?
+          public_send(current_user_method).try!(:id)
         else
           t("views.version.unknown_user")
         end
