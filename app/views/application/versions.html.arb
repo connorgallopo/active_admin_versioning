@@ -1,4 +1,4 @@
-if current_user.application_owner?
+if false
   paginated_collection(versions, display_total: false, download_links: false) do
     table_for(versions, i18n: ::PaperTrail::Version, class: "index_table") do
       column(:id)
