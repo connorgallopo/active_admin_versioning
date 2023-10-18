@@ -16,7 +16,7 @@ module ActiveAdminVersioning
           end
         end
         
-        if current_user.application_admin?
+        if public_send(active_admin_namespace.current_user_method)&.application_admin?
           member_action(:versions) do
             @versions   = resource.versions.reorder(id: :desc, created_at: :desc).page(params[:page])
             @page_title = ::PaperTrail::Version.model_name.human
