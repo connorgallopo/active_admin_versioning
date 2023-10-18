@@ -15,16 +15,18 @@ module ActiveAdminVersioning
             object.touch
           end
         end
-        
-        if public_send(active_admin_namespace.current_user_method)&.application_admin?
-          member_action(:versions) do
+
+        member_action(:versions) do
+          if current_user && current_user.application_owner?
             @versions   = resource.versions.reorder(id: :desc, created_at: :desc).page(params[:page])
             @page_title = ::PaperTrail::Version.model_name.human
             render "versions"
           end
-        
+        end
+      
 
-          member_action :rollbacks do
+        member_action :rollbacks do
+          if current_user && current_user.application_owner?
             version = ::PaperTrail::Version.find_by(id: params[:version])
             if version.reify(has_many: true, has_one: true).save
               # version.destroy
@@ -35,37 +37,41 @@ module ActiveAdminVersioning
                 notice: I18n.t(:failed, default: 'FAILED!', scope: [:active_admin, :versioning])
             end
           end
-          with_options only: :show do
+        end
+        with_options only: :show do
             action_item :version do
-              link_to send("versions_admin_#{resource_instance_name}_path") do
-                ::PaperTrail::Version.model_name.human
+              if current_user && current_user.application_owner?
+                link_to send("versions_admin_#{resource_instance_name}_path") do
+                  ::PaperTrail::Version.model_name.human
+                end
               end
             end
             action_item :version, only: :show do
-              if resource.versions.present? && !resource.paper_trail.live?
-                link_to [:rollbacks, active_admin_namespace, resource_instance_name, version: resource.version.id ] do
-                  I18n.t(:rollback, default: 'Rollback', scope: [:active_admin, :versioning])
+              if current_user && current_user.application_owner?
+                if resource.versions.present? && !resource.paper_trail.live?
+                  link_to [:rollbacks, active_admin_namespace, resource_instance_name, version: resource.version.id ] do
+                    I18n.t(:rollback, default: 'Rollback', scope: [:active_admin, :versioning])
                 end
               end
             end
-  
-            sidebar ::PaperTrail::Version.model_name.human do
-              if versions.present?
-                attributes_table_for versions[0] do
-                  row ::PaperTrail::Version.model_name.human do |_|
-                    version_number
-                  end
-                  row :event, &:event_i18n
-                  row :whodunnit do |record|
-                    record.send(ActiveAdminVersioning.configuration.whodunnit_attribute_name).presence ||
-                        span(t("views.version.unknown_user"), class: "empty")
-                  end
-                  row :created_at
+          end
+
+          sidebar ::PaperTrail::Version.model_name.human do
+            if versions.present? && current_user && current_user.application_owner?
+              attributes_table_for versions[0] do
+                row ::PaperTrail::Version.model_name.human do |_|
+                  version_number
                 end
-                paginate versions, theme: :version
-              else
-                I18n.t("views.version.empty", model_name: ::PaperTrail::Version.model_name.human)
+                row :event, &:event_i18n
+                row :whodunnit do |record|
+                  record.send(ActiveAdminVersioning.configuration.whodunnit_attribute_name).presence ||
+                      span(t("views.version.unknown_user"), class: "empty")
+                end
+                row :created_at
               end
+              paginate versions, theme: :version
+            else
+              I18n.t("views.version.empty", model_name: ::PaperTrail::Version.model_name.human)
             end
           end
         end
